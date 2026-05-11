@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>D&T Progress Tracker</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#f4f2ed;color:#222;min-height:100vh}
+  .header{background:#2c2c2c;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between}
+  .header h1{color:#f0ede0;font-size:18px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .header-btns{display:flex;gap:8px}
+  .btn{padding:7px 14px;font-size:13px;border:none;border-radius:6px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:5px;transition:opacity .15s}
+  .btn:hover{opacity:.85}
+  .btn-dark{background:#555;color:#fff}
+  .btn-green{background:#4a8c2a;color:#fff}
+  .btn-red{background:#c0392b;color:#fff}
+  .btn-grey{background:#ddd;color:#333}
+  .btn-sm{padding:4px 10px;font-size:12px;border-radius:5px}
+  .tab-bar{background:#e8e5dc;display:flex;gap:0;padding:0 20px;border-bottom:1px solid #ccc;overflow-x:auto}
+  .tab{padding:10px 18px;font-size:13px;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;color:#666;font-weight:500;white-space:nowrap;transition:color .15s}
+  .tab:hover{color:#222}
+  .tab.active{color:#222;border-bottom-color:#2c2c2c}
+  .legend{display:flex;gap:16px;padding:14px 24px 6px;flex-wrap:wrap}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#666}
+  .legend-dot{width:10px;height:10px;border-radius:50%}
+  .main{padding:12px 24px 40px}
+  .card{background:#fff;border:1px solid #ddd;border-radius:10px;margin-bottom:14px;overflow:hidden}
+  .card-header{background:#fafaf7;padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;border-bottom:1px solid #eee}
+  .card-header:hover{background:#f5f3ee}
+  .card-title{font-size:15px;font-weight:600;color:#222;flex:1}
+  .card-meta{font-size:12px;color:#888;font-weight:400}
+  .class-badge{background:#e8e5dc;border:1px solid #ccc;border-radius:12px;padding:2px 9px;font-size:11px;color:#666}
+  .chevron{font-size:13px;color:#888;transition:transform .2s;flex-shrink:0}
+  .chevron.open{transform:rotate(180deg)}
+  .summary-dots{display:flex;gap:3px;align-items:center}
+  .sdot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .card-body{padding:12px 16px}
+  .subtask-block{margin-bottom:14px}
+  .subtask-label{background:#f0ede5;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;color:#444;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+  .subtask-label span{flex:1}
+  .pupil-row{display:flex;align-items:center;gap:8px;padding:5px 6px;border-bottom:1px solid #f0f0f0}
+  .pupil-row:last-child{border-bottom:none}
+  .pupil-name{font-size:13px;color:#333;min-width:130px;flex-shrink:0}
+  .grade-btns{display:flex;gap:5px;flex-wrap:wrap}
+  .gpill{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;border:2px solid transparent;cursor:pointer;transition:all .12s}
+  .gpill:hover{opacity:.8}
+  .gpill-green{background:#d4edba;color:#3B6D11;border-color:#3B6D11}
+  .gpill-green.active{background:#4a8c2a;color:#fff;border-color:#4a8c2a}
+  .gpill-amber{background:#fce8b2;color:#7a4e00;border-color:#d4860a}
+  .gpill-amber.active{background:#d4860a;color:#fff;border-color:#d4860a}
+  .gpill-red{background:#f5c6c2;color:#7d1a14;border-color:#c0392b}
+  .gpill-red.active{background:#c0392b;color:#fff;border-color:#c0392b}
+  .add-subtask-row{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dashed #ddd}
+  .add-subtask-row input{flex:1;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;background:#f9f9f7}
+  .add-subtask-row input:focus{outline:none;border-color:#4a8c2a}
+  .empty{text-align:center;padding:60px 20px;color:#aaa;font-size:14px}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:center;justify-content:center}
+  .overlay.open{display:flex}
+  .modal{background:#fff;border-radius:12px;padding:28px;width:420px;max-width:calc(100vw - 32px);max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+  .modal h2{font-size:18px;font-weight:700;margin-bottom:16px;color:#222}
+  .modal label{font-size:12px;color:#666;display:block;margin-bottom:4px;margin-top:14px}
+  .modal input,.modal textarea,.modal select{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:14px;background:#f9f9f7;font-family:inherit}
+  .modal input:focus,.modal textarea:focus,.modal select:focus{outline:none;border-color:#4a8c2a}
+  .modal textarea{resize:vertical;min-height:90px}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+  .cls-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f9f9f7;border:1px solid #e5e5e0;border-radius:7px;margin-bottom:6px}
+  .cls-row-name{flex:1;font-size:13px;font-weight:600;color:#222}
+  .cls-row-meta{font-size:11px;color:#999}
+  .warn{background:#fff8e1;border:1px solid #ffe082;border-radius:7px;padding:8px 12px;font-size:12px;color:#7a5c00;margin-top:8px}
+  .rename-input{border:1px solid #4a8c2a;border-radius:5px;padding:3px 7px;font-size:13px;font-weight:600;color:#222;background:#fff;width:160px}
+  .rename-input:focus{outline:none}
+  .cls-row-name-wrap{flex:1;display:flex;align-items:center;gap:6px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📐 D&T Progress Tracker</h1>
+  <div class="header-btns">
+    <button class="btn btn-dark" onclick="openClassModal()">👥 Manage Classes</button>
+    <button class="btn btn-green" onclick="openProjectModal()">＋ New Project</button>
+  </div>
+</div>
+
+<div class="tab-bar" id="tab-bar"></div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#4a8c2a"></div>On Track</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#d4860a"></div>Some Concerns</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#c0392b"></div>Needs Work</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ccc"></div>Not graded</div>
+</div>
+
+<div class="main" id="main"></div>
+
+<div class="overlay" id="class-modal" onclick="overlayClose(event,'class-modal')">
+  <div class="modal">
+    <h2>👥 Manage Classes</h2>
+    <div id="cls-list"></div>
+    <label style="margin-top:16px">New class name</label>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <input type="text" id="new-cls-input" placeholder="e.g. 9A DT" onkeydown="if(event.key==='Enter')addClass()"/>
+      <button class="btn btn-green btn-sm" onclick="addClass()">Add</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-grey" onclick="closeModal('class-modal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="pupil-modal" onclick="overlayClose(event,'pupil-modal')">
+  <div class="modal">
+    <h2 id="pupil-modal-title">Edit Pupils</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:8px">One pupil per line</p>
+    <textarea id="pupil-textarea" rows="10"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-grey" onclick="closeModal('pupil-modal')">Cancel</button>
+      <button class="btn btn-green" onclick="savePupils()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="proj-modal" onclick="overlayClose(event,'proj-modal')">
+  <div class="modal">
+    <h2>New Project</h2>
+    <label>Project name</label>
+    <input type="text" id="proj-name-input" placeholder="e.g. Resistant Materials"/>
+    <label>Assign to class</label>
+    <select id="proj-class-select"></select>
+    <div id="proj-no-class" class="warn" style="display:none">No classes yet — <a href="#" onclick="closeModal('proj-modal');openClassModal();return false">create one first</a>.</div>
+    <div class="modal-actions">
+      <button class="btn btn-grey" onclick="closeModal('proj-modal')">Cancel</button>
+      <button class="btn btn-green" onclick="saveProject()">Create</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function defaultData() {
+  return {
+    classes: [{id:1, name:'10B DT', pupils:['Alice M','Ben T','Charlotte R','Dylan K','Emma S']}],
+    projects: [{
+      id:1, classId:1, name:'Sustainable Packaging',
+      open:true,
+      subtasks:[
+        {id:1,name:'Research & mood board'},
+        {id:2,name:'Initial sketches'},
+        {id:3,name:'Prototype construction'},
+        {id:4,name:'Evaluation write-up'}
+      ],
+      grades:{}
+    }],
+    activeTab: 'all'
+  };
+}
+
+let S = defaultData();
+
+let editingClassId = null;
+let nextClassId = Math.max(0, ...S.classes.map(c=>c.id)) + 1;
+let nextProjId  = Math.max(0, ...S.projects.map(p=>p.id)) + 1;
+
+function save() { /* no-op in preview */ }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function render() { renderTabs(); renderProjects(); }
+
+function renderTabs() {
+  const bar = document.getElementById('tab-bar');
+  let html = `<button class="tab${S.activeTab==='all'?' active':''}" onclick="setTab('all')">All Projects</button>`;
+  S.classes.forEach(c => {
+    html += `<button class="tab${S.activeTab===c.id?' active':''}" onclick="setTab(${c.id})">${esc(c.name)}</button>`;
+  });
+  bar.innerHTML = html;
+}
+
+function setTab(val) { S.activeTab = val; save(); render(); }
+
+function renderProjects() {
+  const main = document.getElementById('main');
+  let projects = S.projects;
+  if (S.activeTab !== 'all') projects = projects.filter(p => p.classId === S.activeTab);
+  if (!projects.length) {
+    main.innerHTML = '<div class="empty">No projects here yet.<br>Click <b>+ New Project</b> to get started.</div>';
+    return;
+  }
+  main.innerHTML = projects.map(p => projectHTML(p)).join('');
+}
+
+function projectHTML(p) {
+  const cls = S.classes.find(c => c.id === p.classId);
+  const clsName = cls ? cls.name : 'No class';
+  const pupils = cls ? cls.pupils : [];
+  let dotHtml = '';
+  const gc = Object.values(p.grades).filter(x=>x==='on-track').length;
+  const ac = Object.values(p.grades).filter(x=>x==='some-concerns').length;
+  const rc = Object.values(p.grades).filter(x=>x==='needs-work').length;
+  if(gc) dotHtml += `<span class="sdot" style="background:#4a8c2a" title="${gc} on track"></span>`;
+  if(ac) dotHtml += `<span class="sdot" style="background:#d4860a" title="${ac} some concerns"></span>`;
+  if(rc) dotHtml += `<span class="sdot" style="background:#c0392b" title="${rc} needs work"></span>`;
+  const subtasksHtml = p.subtasks.length
+    ? p.subtasks.map(st => subtaskHTML(p, st, pupils)).join('')
+    : '<p style="font-size:13px;color:#aaa;font-style:italic;padding:4px 0">No subtasks yet.</p>';
+  return `
+  <div class="card" id="card-${p.id}">
+    <div class="card-header" onclick="toggleCard(${p.id})">
+      <span style="font-size:18px">📁</span>
+      <span class="card-title">${esc(p.name)}</span>
+      <span class="class-badge">${esc(clsName)}</span>
+      <span class="card-meta">${pupils.length} pupil${pupils.length!==1?'s':''} · ${p.subtasks.length} task${p.subtasks.length!==1?'s':''}</span>
+      <div class="summary-dots">${dotHtml}</div>
+      <button class="btn btn-red btn-sm" onclick="deleteProject(event,${p.id})">🗑</button>
+      <span class="chevron${p.open?' open':''}">▼</span>
+    </div>
+    <div class="card-body" id="body-${p.id}" style="${p.open?'':'display:none'}">
+      ${subtasksHtml}
+      <div class="add-subtask-row">
+        <input type="text" id="st-input-${p.id}" placeholder="New subtask name…" onkeydown="if(event.key==='Enter')addSubtask(${p.id})"/>
+        <button class="btn btn-green btn-sm" onclick="addSubtask(${p.id})">＋ Add subtask</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function subtaskHTML(p, st, pupils) {
+  const dots = pupils.map(pupil => {
+    const g = p.grades[`${st.id}_${pupil}`] || '';
+    const col = g==='on-track'?'#4a8c2a':g==='some-concerns'?'#d4860a':g==='needs-work'?'#c0392b':'#ccc';
+    return `<span class="sdot" style="background:${col}" title="${esc(pupil)}"></span>`;
+  }).join('');
+  const rows = pupils.length
+    ? pupils.map(pupil => {
+        const key = `${st.id}_${pupil}`;
+        const g = p.grades[key] || '';
+        return `<div class="pupil-row">
+          <span class="pupil-name">${esc(pupil)}</span>
+          <div class="grade-btns">
+            <span class="gpill gpill-green${g==='on-track'?' active':''}" onclick="setGrade(${p.id},${st.id},'${esc(pupil)}','on-track')">On Track</span>
+            <span class="gpill gpill-amber${g==='some-concerns'?' active':''}" onclick="setGrade(${p.id},${st.id},'${esc(pupil)}','some-concerns')">Some Concerns</span>
+            <span class="gpill gpill-red${g==='needs-work'?' active':''}" onclick="setGrade(${p.id},${st.id},'${esc(pupil)}','needs-work')">Needs Work</span>
+          </div>
+        </div>`;
+      }).join('')
+    : '<p style="font-size:12px;color:#bbb;font-style:italic;padding:4px 6px">No pupils in this class.</p>';
+  return `<div class="subtask-block">
+    <div class="subtask-label">
+      <span id="st-name-${p.id}-${st.id}">📋 ${esc(st.name)}</span>
+      <div class="summary-dots">${dots}</div>
+      <button class="btn btn-grey btn-sm" onclick="startRenameSubtask(${p.id},${st.id})">✏</button>
+      <button class="btn btn-red btn-sm" onclick="deleteSubtask(${p.id},${st.id})">✕</button>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function toggleCard(id) {
+  const p = S.projects.find(x=>x.id===id);
+  if (!p) return;
+  p.open = !p.open;
+  save(); render();
+}
+
+function setGrade(projId, stId, pupil, grade) {
+  const p = S.projects.find(x=>x.id===projId);
+  if (!p) return;
+  const key = `${stId}_${pupil}`;
+  if (p.grades[key] === grade) delete p.grades[key];
+  else p.grades[key] = grade;
+  save(); render();
+}
+
+function addSubtask(projId) {
+  const inp = document.getElementById(`st-input-${projId}`);
+  const name = inp.value.trim();
+  if (!name) return;
+  const p = S.projects.find(x=>x.id===projId);
+  if (!p) return;
+  const newId = Math.max(0, ...p.subtasks.map(s=>s.id)) + 1;
+  p.subtasks.push({id: newId, name});
+  save(); render();
+  setTimeout(() => { const el = document.getElementById(`st-input-${projId}`); if(el) el.focus(); }, 50);
+}
+
+function startRenameSubtask(projId, stId) {
+  const p = S.projects.find(x=>x.id===projId);
+  const st = p && p.subtasks.find(s=>s.id===stId);
+  if (!st) return;
+  const el = document.getElementById(`st-name-${projId}-${stId}`);
+  if (!el) return;
+  el.outerHTML = `<input class="rename-input" id="st-rename-${projId}-${stId}" value="${esc(st.name)}"
+    onkeydown="if(event.key==='Enter')commitRenameSubtask(${projId},${stId});if(event.key==='Escape')render();"
+    onblur="commitRenameSubtask(${projId},${stId})"/>`;
+  const inp = document.getElementById(`st-rename-${projId}-${stId}`);
+  inp.focus(); inp.select();
+}
+
+function commitRenameSubtask(projId, stId) {
+  const inp = document.getElementById(`st-rename-${projId}-${stId}`);
+  if (!inp) return;
+  const name = inp.value.trim();
+  const p = S.projects.find(x=>x.id===projId);
+  const st = p && p.subtasks.find(s=>s.id===stId);
+  if (st && name) st.name = name;
+  save(); render();
+}
+
+function deleteSubtask(projId, stId) {
+  const p = S.projects.find(x=>x.id===projId);
+  if (!p) return;
+  p.subtasks = p.subtasks.filter(s=>s.id!==stId);
+  Object.keys(p.grades).forEach(k => { if(k.startsWith(`${stId}_`)) delete p.grades[k]; });
+  save(); render();
+}
+
+function deleteProject(e, id) {
+  e.stopPropagation();
+  const p = S.projects.find(x=>x.id===id);
+  if (!p) return;
+  if (!confirm(`Delete project "${p.name}" and all its grades?`)) return;
+  S.projects = S.projects.filter(x=>x.id!==id);
+  save(); render();
+}
+
+function openClassModal() {
+  renderClassList();
+  document.getElementById('new-cls-input').value = '';
+  openModal('class-modal');
+  setTimeout(() => document.getElementById('new-cls-input').focus(), 80);
+}
+
+function renderClassList() {
+  const el = document.getElementById('cls-list');
+  if (!S.classes.length) {
+    el.innerHTML = '<p style="font-size:13px;color:#aaa;font-style:italic;padding:4px 0">No classes yet.</p>';
+    return;
+  }
+  el.innerHTML = S.classes.map(c => `
+    <div class="cls-row" id="cls-row-${c.id}">
+      <div class="cls-row-name-wrap">
+        <span class="cls-row-name" id="cls-name-${c.id}">${esc(c.name)}</span>
+        <span class="cls-row-meta">${c.pupils.length} pupil${c.pupils.length!==1?'s':''}</span>
+      </div>
+      <button class="btn btn-grey btn-sm" onclick="startRenameClass(${c.id})">✏ Rename</button>
+      <button class="btn btn-grey btn-sm" onclick="openPupilEditor(${c.id})">👥 Edit pupils</button>
+      <button class="btn btn-red btn-sm" onclick="deleteClass(${c.id})">🗑 Delete</button>
+    </div>`).join('');
+}
+
+function startRenameClass(id) {
+  const cls = S.classes.find(c=>c.id===id);
+  if (!cls) return;
+  const nameEl = document.getElementById(`cls-name-${id}`);
+  const original = cls.name;
+  nameEl.outerHTML = `<input class="rename-input" id="cls-rename-${id}" value="${esc(original)}"
+    onkeydown="if(event.key==='Enter')commitRenameClass(${id});if(event.key==='Escape')renderClassList();"
+    onblur="commitRenameClass(${id})"/>`;
+  const inp = document.getElementById(`cls-rename-${id}`);
+  inp.focus(); inp.select();
+}
+
+function commitRenameClass(id) {
+  const inp = document.getElementById(`cls-rename-${id}`);
+  if (!inp) return;
+  const name = inp.value.trim();
+  if (name) {
+    const cls = S.classes.find(c=>c.id===id);
+    if (cls) cls.name = name;
+    save(); renderTabs(); render();
+  }
+  renderClassList();
+}
+
+function addClass() {
+  const name = document.getElementById('new-cls-input').value.trim();
+  if (!name) return;
+  S.classes.push({id: nextClassId++, name, pupils: []});
+  save(); renderClassList(); renderTabs();
+  document.getElementById('new-cls-input').value = '';
+}
+
+function deleteClass(id) {
+  const numId = Number(id);
+  const cls = S.classes.find(c=>c.id===numId);
+  if (!cls) return;
+  const overlay = document.getElementById('class-modal');
+  overlay.onclick = null;
+  const confirmed = confirm(`Delete class "${cls.name}"? Projects using it will be unassigned.`);
+  overlay.onclick = (e) => overlayClose(e, 'class-modal');
+  if (!confirmed) return;
+  S.classes = S.classes.filter(c=>c.id!==numId);
+  S.projects.forEach(p => { if(p.classId===numId) p.classId=null; });
+  if (S.activeTab === numId) S.activeTab = 'all';
+  save(); renderClassList(); render();
+}
+
+function openPupilEditor(id) {
+  editingClassId = id;
+  const cls = S.classes.find(c=>c.id===id);
+  document.getElementById('pupil-modal-title').textContent = `Edit Pupils — ${cls.name}`;
+  document.getElementById('pupil-textarea').value = cls.pupils.join('\n');
+  openModal('pupil-modal');
+  setTimeout(() => document.getElementById('pupil-textarea').focus(), 80);
+}
+
+function savePupils() {
+  const cls = S.classes.find(c=>c.id===editingClassId);
+  if (!cls) return;
+  cls.pupils = document.getElementById('pupil-textarea').value
+    .split('\n').map(s=>s.trim()).filter(Boolean);
+  save(); renderClassList(); render();
+  closeModal('pupil-modal');
+}
+
+function openProjectModal() {
+  const sel = document.getElementById('proj-class-select');
+  sel.innerHTML = S.classes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  document.getElementById('proj-no-class').style.display = S.classes.length ? 'none' : 'block';
+  document.getElementById('proj-name-input').value = '';
+  openModal('proj-modal');
+  setTimeout(() => document.getElementById('proj-name-input').focus(), 80);
+}
+
+function saveProject() {
+  const name = document.getElementById('proj-name-input').value.trim();
+  if (!name) { alert('Please enter a project name.'); return; }
+  const classId = parseInt(document.getElementById('proj-class-select').value) || null;
+  S.projects.push({id: nextProjId++, classId, name, open:true, subtasks:[], grades:{}});
+  save(); render(); closeModal('proj-modal');
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function overlayClose(e, id) { if(e.target === document.getElementById(id)) closeModal(id); }
+
+render();
+</script>
+</body>
+</html>
